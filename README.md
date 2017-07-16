@@ -1,4 +1,12 @@
-# scala/play-getting-started
+# vazante
+
+sbt run (hot reload??) ou sbt run
+
+https://developers.google.com/maps/documentation/javascript/examples/directions-simple?hl=pt-br
+
+https://www.experts-exchange.com/questions/26617895/Plotting-multiple-directions-using-Google-maps-API.html
+
+Lembrar de restringir a chave de acesso!
 
 A barebones Scala app (using the Play framework), which can easily be deployed to Heroku.  
 
