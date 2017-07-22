@@ -1,0 +1,17 @@
+@(message: String)
+
+@main("GettingStarted") {
+  <select id="start">
+    <option value='0'>Selecione uma saída</option>
+    <option value='1'>Saída Rockfeller</option>
+    <option value='2'>St Louis</option>
+  </select>
+
+  <input id="end" class="controls" type="text"
+      placeholder="Enter a destination location">
+
+  <div id="map_canvas"  style="width: 800px; height: 400px"></div>
+  <button id="preferred">Bora la!!!</button> 
+  <script type="text/javascript" src="@routes.Assets.at("javascripts/preferred.js")">
+  </script>
+}

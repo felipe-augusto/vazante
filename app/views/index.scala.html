@@ -1,5 +1,9 @@
 @(message: String)
 
 @main("GettingStarted") {
-
+    <div class="fb-login-button" data-max-rows="1" data-size="large" data-button-type="continue_with" data-show-faces="false" data-auto-logout-link="false" data-use-continue-as="false" onlogin="checkLoginState();"></div>
+    <div id="map_canvas"  style="width: 800px; height: 400px"></div>
+    <button id="preffered">Go!!!</button> 
+    <script type="text/javascript" src="@routes.Assets.at("javascripts/render.js")">
+    </script>
 }
