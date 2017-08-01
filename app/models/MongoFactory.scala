@@ -3,11 +3,13 @@ import com.mongodb.casbah.MongoCollection
 import com.mongodb.casbah.MongoConnection
 
 object MongoFactory {
-  private val SERVER = "localhost"
+  private val SERVER = System.getenv("DB_PATH")
   private val PORT = 27017
   private val DATABASE = "vazante"
   private val USERS = "users"
+  private val PREFERRED_PATH = "preferred_path"
 
-  val connection = MongoConnection(SERVER)
+  val connection = MongoClient(SERVER)
   val user = connection(DATABASE)(USERS)
+  val preferred = connection(DATABASE)(PREFERRED_PATH)
 }
