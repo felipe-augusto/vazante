@@ -1,5 +1,15 @@
 # vazante
 
+## Primeiros passos
+
+Primeiramente, clone o repositório
+https://github.com/felipe-augusto/vazante.git
+
+
+
+
+
+
 sbt run (hot reload??) ou sbt run
 
 https://developers.google.com/maps/documentation/javascript/examples/directions-simple?hl=pt-br

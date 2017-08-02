@@ -1,6 +1,7 @@
 package models
 import com.mongodb.casbah.MongoCollection
 import com.mongodb.casbah.MongoClient
+import com.mongodb.casbah.MongoClientURI
 
 object MongoFactory {
   private val SERVER = System.getenv("DB_PATH")
