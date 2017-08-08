@@ -3,9 +3,11 @@
 # ~~~~
 
 # Home page
+OPTIONS /*path                      controllers.Application.options(path)
 GET     /                           controllers.Application.index
 GET     /db                         controllers.Application.db
 POST    /api/facebook               controllers.Authentication.facebook
+OPTIONS /api/facebook               controllers.Authentication.facebook_options
 GET     /preferred                  controllers.Location.index
 
 # Map static resources from the /public folder to the /assets URL path
