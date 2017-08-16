@@ -9,9 +9,11 @@ object MongoFactory {
   private val DATABASE = "vazante"
   private val USERS = "users"
   private val PREFERRED_PATH = "preferred_path"
+  private val LOCATION = "location"
 
   val uri = MongoClientURI(SERVER)
   val connection = MongoClient(uri)
   val user = connection(DATABASE)(USERS)
   val preferred = connection(DATABASE)(PREFERRED_PATH)
+  val location = connection(DATABASE)(LOCATION)
 }

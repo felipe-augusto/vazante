@@ -23,9 +23,9 @@ function checkLoginState() {
       {
         method: "POST",
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/json'
         },
-        body: serialize({access_token: response.authResponse.accessToken})
+        body: {access_token: response.authResponse.accessToken}
       })
       .then(res => res.json().then(body => console.log(parseJwt(body.token))))
       .then(console.log)
