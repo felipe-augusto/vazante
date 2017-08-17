@@ -17,10 +17,17 @@ import pdi.jwt.JwtSession
 import org.bson.types.ObjectId
 import com.mongodb.casbah.Imports._
 
+import scala.collection.parallel.immutable._
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+
 object Location extends Controller {
+  implicit val coordsReader = Json.reads[Coordenate] 
+  implicit val similarityWrites = Json.writes[Similarity]
   /*
     This route is responsible for creating a new Location.
-    It creates in the Database a instance Location with the user_id, time
+    It creates in the Database a instance Location with the
+    user name, sex, picture; time of leaving
     and the coords of the path the user takes to go home.
 
     It retuns the location_id of the recently created object.
@@ -28,16 +35,22 @@ object Location extends Controller {
   def create = Action { request => 
     request.body.asJson.map { json =>
 
-      implicit val coordsReader = Json.reads[Coordenate] 
-
       // extract json data sent
       val user_id = (json \ "user_id").as[JsString].value
+      val user = User.find(MongoDBObject("_id" -> new ObjectId(user_id)))
+
+      // get info from user to save in location info
+      // this avoids joins later
+      val name = user.as[String]("name")
+      val gender = user.as[String]("gender")
+      val picture = user.as[String]("picture")
+
       val time = (json \ "time").as[JsString].value
       // transform list of sent coords using implicit convertion
       val coords = (json \ "coords").asOpt[List[Coordenate]].getOrElse(List())
       
       // create a new location and save
-      val new_location = LocationInfo(user_id, time, coords)
+      val new_location = LocationInfo(user_id, time, coords, name, gender, picture)
       val saved = LocationInfo.save(new_location)
 
       // returns the ID of the recently created location
@@ -69,15 +82,13 @@ object Location extends Controller {
 
       // find the location
       val location = LocationInfo.findOne(MongoDBObject("_id" -> new ObjectId(location_id)))
+      val myCoordenates = location.as[BasicDBList]("coords")
+      val user_id = location.as[String]("user_id")
 
-      val myCoordenates = location.as[BasicDBList]("coords").toList
-      
       // find others locations
-      val others = LocationInfo.findOthers(location_id)
+      val others = LocationInfo.findOthers(location_id, user_id)
 
-      calculateIntersection(myCoordenates, others)
-
-      Ok(Json.toJson("ok")).withHeaders(
+      Ok(Json.toJson(calculateIntersection(myCoordenates, others).toList)).withHeaders(
         "Access-Control-Allow-Origin" -> "*",
         "Access-Control-Allow-Methods" -> "GET, POST, PUT, DELETE, OPTIONS",
         "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
@@ -89,32 +100,41 @@ object Location extends Controller {
     }
   }
 
-  def calculateIntersection(main: List[Any], others: MongoCursor) = {
+  /*
+    This function is responsible to compare one location with all the
+    locations that are inside a time boundary.
+
+    Since this methods uses concurrence, it return a ParSeq[Similarity]
+  */
+
+  def calculateIntersection(main: BasicDBList, others: MongoCursor) = {
     var map = Map[String, Boolean]()
+    // compose a map
+    main.foreach { coordenate => 
+      val lat = coordenate.asInstanceOf[BasicDBObject].as[Double]("lat")
+      val lng = coordenate.asInstanceOf[BasicDBObject].as[Double]("lng")
+      map = map + ((lat.toString + lng.toString) -> true)
+    }
 
-    (main.map (_.toString.replace("[", "").replace("]", "").trim.split(",")).toArray)
-      .foreach(item => map = map + (item(0) + "@@" + item(1) -> true))
+    // execute in parallel for others locations
+    others.toList.par.map { other => {
+        val name = other.as[String]("name")
+        val gender = other.as[String]("gender")
+        val picture = other.as[String]("picture")
 
-    others.foreach { each => {
-        val coords = each.as[BasicDBList]("coords")
-        println(each)
+        val coords = other.as[BasicDBList]("coords")
+        
+        // this is done in parallel two
+        val similatiry = coords.par.foldLeft(0) { (acc, coordenate) =>
+          val lat = coordenate.asInstanceOf[BasicDBObject].as[Double]("lat")
+          val lng = coordenate.asInstanceOf[BasicDBObject].as[Double]("lng")
+          val key = lat.toString + lng.toString
+          if (map.getOrElse(key, false)) acc + 1
+          else acc
+        } * 100 / coords.size.toFloat
+
+        Similarity(similatiry, name, gender, picture)
       }
     }
   }
-
-
-//   function calculateIntersection(main, others) {
-//   let hash = {}
-  
-//   main.forEach(function(path){
-//     hash[path] = true
-//   })
-  
-//   return others.map(function(map) {
-//     return map.reduce(function(acc, item) {
-//       if(hash[item] != null) return acc + 1
-//       return acc
-//     }, 0) * 100 / main.length
-//   })
-// }
 }

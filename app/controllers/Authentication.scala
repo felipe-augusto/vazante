@@ -59,9 +59,6 @@ object Authentication extends Controller {
     }.getOrElse {
       Ok("Missing parameter [access_token]")
     }
-    //val access_token = request.body.asFormUrlEncoded.get("access_token").mkString
-
-
   }
 
     def facebook_options = Action {
