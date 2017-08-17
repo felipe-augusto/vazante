@@ -53,13 +53,13 @@ object LocationInfo {
     }
   }
 
-  def findOthers(location_id: String, user_id: String) = {
+  def findOthers(location_id: String, user_id: String, time: String) = {
     val id = new ObjectId(location_id)
     // gets now
-    val timestamp: Long = System.currentTimeMillis
+    val timestamp: Long = time.toLong
     // get bounderies of 15 minutes before and 15 minutes after
     // from now
-    val lowerBoundery = (timestamp - (60 * 60 * 1000)).toString
+    val lowerBoundery = (timestamp - (15 * 60 * 1000)).toString
     val higherBoundery = (timestamp + (15 * 60 * 1000)).toString
 
     // query all locations that are inside the boundary

@@ -1,3 +1,3 @@
 package lib
 
-case class Coordenate(val lat: Float, val lng: Float) {}
+case class Coordenate(lat: Float, lng: Float) {}

@@ -31,6 +31,10 @@ object Location extends Controller {
     and the coords of the path the user takes to go home.
 
     It retuns the location_id of the recently created object.
+
+    {
+      "location_id": "5995e3087ffca4467e8fa01b"
+    }
   */
   def create = Action { request => 
     request.body.asJson.map { json =>
@@ -73,6 +77,44 @@ object Location extends Controller {
     location_id so that we know the path you take.
 
     It returns an ordered list of the possible matchs
+
+    [
+      {
+        "percentage": 69.44444274902344,
+        "name": "email3@t.com",
+        "gender": "female",
+        "picture": "https://randomuser.me/api/portraits/thumb/women/15.jpg",
+        "time": "1502993386847"
+      },
+      {
+        "percentage": 16,
+        "name": "email3@t.com",
+        "gender": "male",
+        "picture": "https://randomuser.me/api/portraits/thumb/men/10.jpg",
+        "time": "1502993386847"
+      },
+      {
+        "percentage": 5,
+        "name": "email3@t.com",
+        "gender": "male",
+        "picture": "https://randomuser.me/api/portraits/thumb/men/10.jpg",
+        "time": "1502993386847"
+      },
+      {
+        "percentage": 3.225806474685669,
+        "name": "email2@t.com",
+        "gender": "male",
+        "picture": "https://randomuser.me/api/portraits/thumb/men/2.jpg",
+        "time": "1502993386846"
+      },
+      {
+        "percentage": 1.8867924213409424,
+        "name": "email1@t.com",
+        "gender": "female",
+        "picture": "https://randomuser.me/api/portraits/thumb/women/1.jpg",
+        "time": "1502993386844"
+      }
+    ]
   */
   def matcher = Action { request => 
     request.body.asJson.map { json =>
@@ -83,12 +125,28 @@ object Location extends Controller {
       // find the location
       val location = LocationInfo.findOne(MongoDBObject("_id" -> new ObjectId(location_id)))
       val myCoordenates = location.as[BasicDBList]("coords")
+      val time = location.as[String]("time")
       val user_id = location.as[String]("user_id")
 
       // find others locations
-      val others = LocationInfo.findOthers(location_id, user_id)
+      val others = LocationInfo.findOthers(location_id, user_id, time)
 
-      Ok(Json.toJson(calculateIntersection(myCoordenates, others).toList)).withHeaders(
+      // calculate route intersection with percentage
+      val result = calculateIntersection(myCoordenates, others).toList
+
+      // order the result
+      val sorted = QuickSort.orderedTrait[Similarity](result)
+
+      /*
+        It is also possible to order using first class functions
+        instead of the trait ordered:
+        
+        def comp(x: Similarity, y: Similarity) = x.percentage < y.percentage
+        def equal(x: Similarity, y: Similarity) = x.percentage == y.percentage
+        val sorted =  QuickSort.firstClass[Similarity](result, comp, equal)
+      */
+
+      Ok(Json.toJson(sorted)).withHeaders(
         "Access-Control-Allow-Origin" -> "*",
         "Access-Control-Allow-Methods" -> "GET, POST, PUT, DELETE, OPTIONS",
         "Access-Control-Allow-Headers" -> "Accept, Origin, Content-type, X-Json, X-Prototype-Version, X-Requested-With",
@@ -105,6 +163,7 @@ object Location extends Controller {
     locations that are inside a time boundary.
 
     Since this methods uses concurrence, it return a ParSeq[Similarity]
+
   */
 
   def calculateIntersection(main: BasicDBList, others: MongoCursor) = {
@@ -121,11 +180,12 @@ object Location extends Controller {
         val name = other.as[String]("name")
         val gender = other.as[String]("gender")
         val picture = other.as[String]("picture")
+        val time = other.as[String]("time")
 
         val coords = other.as[BasicDBList]("coords")
         
-        // this is done in parallel two
-        val similatiry = coords.par.foldLeft(0) { (acc, coordenate) =>
+        // this is done in parallel too
+        val percentage = coords.par.foldLeft(0) { (acc, coordenate) =>
           val lat = coordenate.asInstanceOf[BasicDBObject].as[Double]("lat")
           val lng = coordenate.asInstanceOf[BasicDBObject].as[Double]("lng")
           val key = lat.toString + lng.toString
@@ -133,7 +193,7 @@ object Location extends Controller {
           else acc
         } * 100 / coords.size.toFloat
 
-        Similarity(similatiry, name, gender, picture)
+        Similarity(percentage, name, gender, picture, time)
       }
     }
   }
